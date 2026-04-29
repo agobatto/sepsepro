@@ -1,13 +1,36 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 export default function LoginPage() {
-  const handleLogin = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, we would validate credentials here.
-    // For this mockup, we redirect to the dashboard.
-    window.location.href = '/dashboard';
+    setLoading(true);
+    setError(null);
+
+    const supabase = createClient();
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      router.push('/dashboard');
+      router.refresh();
+    }
   };
 
   return (
@@ -50,15 +73,23 @@ export default function LoginPage() {
           Faça login para acessar os protocolos e a biblioteca de antibióticos.
         </p>
 
+        {error && (
+          <div style={{ backgroundColor: 'var(--danger-light)', color: 'var(--danger)', padding: '0.75rem', borderRadius: 'var(--border-radius)', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center' }}>
+            Falha no login. Verifique suas credenciais.
+          </div>
+        )}
+
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label htmlFor="crm" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>
-              CRM ou E-mail
+            <label htmlFor="email" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>
+              E-mail
             </label>
             <input 
-              type="text" 
-              id="crm" 
-              placeholder="Ex: 123456 ou medico@hospital.com"
+              type="email" 
+              id="email" 
+              placeholder="medico@hospital.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
@@ -83,6 +114,8 @@ export default function LoginPage() {
               type="password" 
               id="password" 
               placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
@@ -95,8 +128,8 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', padding: '0.875rem' }}>
-            Entrar
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem', padding: '0.875rem', opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
