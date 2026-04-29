@@ -34,18 +34,36 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect /dashboard routes
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // Se não estiver logado e tentar acessar área logada, manda pro login
+  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/update-password'))) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  // Redirect to dashboard if logged in and trying to access /login
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+  if (user) {
+    const requiresPasswordChange = user.user_metadata?.requires_password_change === true;
+
+    // Se precisa mudar a senha e tenta acessar o dashboard, prende no update-password
+    if (requiresPasswordChange && request.nextUrl.pathname.startsWith('/dashboard')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/update-password';
+      return NextResponse.redirect(url);
+    }
+
+    // Se NÃO precisa mudar a senha e tenta acessar update-password, manda pro dashboard
+    if (!requiresPasswordChange && request.nextUrl.pathname.startsWith('/update-password')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
+    // Se já tá logado e tenta acessar o login, manda pro dashboard (ou update-password se precisar)
+    if (request.nextUrl.pathname === '/login') {
+      const url = request.nextUrl.clone();
+      url.pathname = requiresPasswordChange ? '/update-password' : '/dashboard';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
