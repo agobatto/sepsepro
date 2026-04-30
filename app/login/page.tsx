@@ -40,7 +40,7 @@ export default function LoginPage() {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'var(--background)',
+      backgroundColor: '#0f172a',
       padding: '1.5rem'
     }}>
       <Link href="/" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
